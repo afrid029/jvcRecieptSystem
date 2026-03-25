@@ -2,21 +2,21 @@
 require_once 'session_init.php';
 require 'db.php';
 
-// Access Control
+// Access Control - Super Admin Only
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'super_admin') {
     header("Location: dashboard.php");
     echo "<script>window.location.pathname = 'dashboard.php'</script>";
     exit();
 }
 
-// Fetch all users with country details
+// Fetch all manager users
 $stmt = $pdo->query("
-    SELECT u.*, c.name AS country_name, c.flag_image AS country_flag 
+    SELECT u.* 
     FROM users u 
-    LEFT JOIN countries c ON u.country_id = c.id 
+    WHERE u.role = 'manager'
     ORDER BY u.created_at DESC
 ");
-$users = $stmt->fetchAll();
+$managers = $stmt->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -24,7 +24,7 @@ $users = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Admins - J/Victoria College</title>
+    <title>Manage Supervisors - J/Victoria College</title>
     <link rel="icon" type="image/jpeg" href="assets/images/logo.jpg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Arima:wght@100..700&display=swap" rel="stylesheet">
@@ -36,26 +36,25 @@ $users = $stmt->fetchAll();
     <script>
         window.addEventListener("pageshow", function (event) {
             if (event.persisted) {
-                // Page was restored from bfcache
                 window.location.reload();
             }
         });
     </script>
 </head>
 
-<body class="bg-orange-50 text-slate-900 min-h-screen p-4 md:p-8">
+<body class="bg-teal-50 text-slate-900 min-h-screen p-4 md:p-8">
 
     <div class="max-w-6xl mx-auto space-y-8">
         <!-- Header -->
         <div
-            class="flex flex-col md:flex-row justify-between items-center bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-orange-200">
+            class="flex flex-col md:flex-row justify-between items-center bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-teal-200">
             <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Admin Management</h1>
-                <p class="text-slate-500 mt-1">Manage system administrators</p>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-900">Manage Supervisors</h1>
+                <p class="text-slate-500 mt-1">Create & manage supervisor accounts</p>
             </div>
             <div class="flex gap-4 mt-4 md:mt-0">
                 <a href="dashboard.php"
-                    class="px-6 py-2 bg-orange-100 hover:bg-orange-200 text-slate-700 flex gap-2 items-center rounded-lg font-semibold transition-all">
+                    class="px-6 py-2 bg-teal-100 hover:bg-teal-200 text-slate-700 flex gap-2 items-center rounded-lg font-semibold transition-all">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd"
                             d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
@@ -95,140 +94,93 @@ $users = $stmt->fetchAll();
         </script>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <!-- Create Admin Form -->
+            <!-- Create Supervisor Form -->
             <div class="md:col-span-1 h-fit">
                 <div
-                    class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-orange-200 sticky top-8">
+                    class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-teal-200 sticky top-8">
                     <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-900">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-emerald-500" fill="none"
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-teal-500" fill="none"
                             viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                         </svg>
-                        Add New Admin
+                        Add Supervisor
                     </h2>
-                    <form action="admin_actions.php" method="POST" class="space-y-4">
+                    <form action="supervisor_actions.php" method="POST" class="space-y-4">
                         <input type="hidden" name="action" value="create">
-
-                        <!-- Super Admin Creation Disabled -->
-                        <!-- 
-                        <div class="flex items-center gap-2 mb-4 p-3 bg-indigo-50 rounded-lg border border-indigo-100">
-                            <input type="checkbox" name="is_super_admin" id="is_super_admin" value="1"
-                                onchange="toggleCountryReq(this)"
-                                class="w-5 h-5 rounded text-indigo-600 focus:ring-indigo-500 border-gray-300">
-                            <label for="is_super_admin" class="font-bold text-indigo-900 text-sm">Create as Super
-                                Admin</label>
-                        </div>
-                        -->
-
-                        <div id="country_field">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Country / OSA <span
-                                    class="text-red-500">*</span></label>
-                            <select name="country_id" id="country_select" required
-                                class="w-full px-4 py-2 bg-sky-50/50 border border-sky-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-sky-500">
-                                <option value="">Select Country</option>
-                                <?php
-                                $cStmt = $pdo->query("SELECT id, name FROM countries ORDER BY name ASC");
-                                while ($c = $cStmt->fetch()):
-                                    ?>
-                                    <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
 
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Username <span
                                     class="text-red-500">*</span></label>
                             <input type="text" name="username" required
-                                class="w-full px-4 py-2 bg-sky-50/50 border border-sky-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-sky-500">
+                                class="w-full px-4 py-2 bg-teal-50/50 border border-teal-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-teal-500">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-slate-700 mb-1">Password <span
                                     class="text-red-500">*</span></label>
                             <input type="password" name="password" required
-                                class="w-full px-4 py-2 bg-sky-50/50 border border-sky-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-sky-500">
+                                class="w-full px-4 py-2 bg-teal-50/50 border border-teal-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-teal-500">
                         </div>
                         <button type="submit"
-                            class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg font-bold transition-all shadow-lg text-sm text-white">
-                            Create Admin
+                            class="w-full py-2 bg-teal-600 hover:bg-teal-700 rounded-lg font-bold transition-all shadow-lg text-sm text-white">
+                            Create Supervisor
                         </button>
                     </form>
                 </div>
             </div>
 
-            <!-- List Admins -->
+            <!-- List Supervisors -->
             <div class="md:col-span-2">
                 <div
-                    class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-orange-200 overflow-hidden">
-                    <h2 class="text-xl font-bold mb-4 text-slate-900">Existing Admins</h2>
+                    class="bg-white/90 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-teal-200 overflow-hidden">
+                    <h2 class="text-xl font-bold mb-4 text-slate-900">Existing Supervisors</h2>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="border-b border-sky-200 text-slate-600 text-sm uppercase">
+                                <tr class="border-b border-teal-200 text-slate-600 text-sm uppercase">
                                     <th class="p-3">ID</th>
                                     <th class="p-3">Username</th>
                                     <th class="p-3">Role</th>
                                     <th class="p-3">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-sky-100">
-                                <?php foreach ($users as $user): ?>
-                                    <tr class="hover:bg-sky-50 transition-colors">
-                                        <td class="p-3 text-slate-500">#
-                                            <?= $user['id'] ?>
-                                        </td>
-                                        <td class="p-3 font-medium text-slate-900">
-                                            <?= htmlspecialchars($user['username']) ?>
-                                            <?php if ($user['id'] == $_SESSION['user_id']): ?>
+                            <tbody class="divide-y divide-teal-100">
+                                <?php if (count($managers) > 0): ?>
+                                    <?php foreach ($managers as $user): ?>
+                                        <tr class="hover:bg-teal-50 transition-colors">
+                                            <td class="p-3 text-slate-500">#<?= $user['id'] ?></td>
+                                            <td class="p-3 font-medium text-slate-900">
+                                                <?= htmlspecialchars($user['username']) ?>
+                                            </td>
+                                            <td class="p-3">
                                                 <span
-                                                    class="ml-2 px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] rounded-full uppercase tracking-wide">You</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="p-3">
-                                            <?php if ($user['role'] === 'super_admin'): ?>
-                                                <span
-                                                    class="px-2 py-1 text-xs font-bold bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">Super
-                                                    Admin</span>
-                                            <?php else: ?>
-                                                <span
-                                                    class="px-2 py-1 text-xs font-bold bg-sky-50 text-sky-700 rounded-full border border-sky-100">Admin</span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="p-3">
-                                            <?php if ($user['role'] === 'super_admin'): ?>
-                                                <span class="text-gray-400 italic text-xs">Global</span>
-                                            <?php else: ?>
-                                                <span class="text-slate-600 text-xs flex items-center gap-1">
-                                                    <?php if (!empty($user['country_flag'])): ?>
-                                                        <img src="<?= htmlspecialchars($user['country_flag']) ?>"
-                                                            class="w-4 h-4 rounded-full object-cover">
-                                                    <?php endif; ?>
-                                                    <?= htmlspecialchars($user['country_name'] ?? 'Unassigned') ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        </td>
-                                        <td class="p-3 flex items-center gap-3">
-                                            <!-- Change Password -->
-                                            <button
-                                                onclick="openPasswordModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username']) ?>')"
-                                                class="text-sm text-sky-600 hover:text-sky-700 underline">Change
-                                                Password</button>
+                                                    class="px-2 py-1 text-xs font-bold bg-teal-50 text-teal-700 rounded-full border border-teal-100">Manager</span>
+                                            </td>
+                                            <td class="p-3 flex items-center gap-3">
+                                                <!-- Change Password -->
+                                                <button
+                                                    onclick="openPasswordModal(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username']) ?>')"
+                                                    class="text-sm text-teal-600 hover:text-teal-700 underline">Change
+                                                    Password</button>
 
-                                            <!-- Delete (Cannot delete self) -->
-                                            <?php if ($user['id'] != $_SESSION['user_id']): ?>
-                                                <form id="delete-form-<?= $user['id'] ?>" action="admin_actions.php"
+                                                <!-- Delete -->
+                                                <form id="delete-form-<?= $user['id'] ?>" action="supervisor_actions.php"
                                                     method="POST"
-                                                    onsubmit="event.preventDefault(); showAdminDeleteModal('delete-form-<?= $user['id'] ?>');"
+                                                    onsubmit="event.preventDefault(); showDeleteModal('delete-form-<?= $user['id'] ?>');"
                                                     class="inline">
                                                     <input type="hidden" name="action" value="delete">
                                                     <input type="hidden" name="id" value="<?= $user['id'] ?>">
                                                     <button type="submit"
                                                         class="text-sm text-red-500 hover:text-red-600 underline">Delete</button>
                                                 </form>
-                                            <?php endif; ?>
-                                        </td>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <tr>
+                                        <td colspan="4" class="p-6 text-center text-gray-400 italic">No supervisors created yet.</td>
                                     </tr>
-                                <?php endforeach; ?>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -240,23 +192,23 @@ $users = $stmt->fetchAll();
     <!-- Change Password Modal -->
     <div id="passwordModal"
         class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-50 backdrop-blur-sm">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-sky-100 relative">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-teal-100 relative">
             <h3 class="text-xl font-bold mb-4 text-slate-900">Change Password for <span id="modalUsername"
-                    class="text-sky-600"></span></h3>
-            <form action="admin_actions.php" method="POST" class="space-y-4">
+                    class="text-teal-600"></span></h3>
+            <form action="supervisor_actions.php" method="POST" class="space-y-4">
                 <input type="hidden" name="action" value="update_password">
                 <input type="hidden" name="id" id="modalUserId">
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">New Password <span
                             class="text-red-500">*</span></label>
                     <input type="password" name="password" required
-                        class="w-full px-4 py-2 bg-sky-50 border border-sky-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-sky-500">
+                        class="w-full px-4 py-2 bg-teal-50 border border-teal-200 rounded-lg text-slate-900 focus:ring-2 focus:ring-teal-500">
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" onclick="closePasswordModal()"
                         class="px-4 py-2 text-slate-600 hover:text-slate-900">Cancel</button>
                     <button type="submit"
-                        class="px-4 py-2 bg-sky-600 hover:bg-sky-700 rounded-lg font-bold text-white">Update
+                        class="px-4 py-2 bg-teal-600 hover:bg-teal-700 rounded-lg font-bold text-white">Update
                         Password</button>
                 </div>
             </form>
@@ -266,7 +218,7 @@ $users = $stmt->fetchAll();
     <!-- Delete Confirmation Modal -->
     <div id="deleteModal"
         class="fixed inset-0 bg-slate-900/60 hidden items-center justify-center z-[100] backdrop-blur-sm p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-sky-100 text-center transform transition-all scale-95 opacity-0 duration-200"
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm border border-teal-100 text-center transform transition-all scale-95 opacity-0 duration-200"
             id="modalContainer">
             <div
                 class="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
@@ -276,18 +228,18 @@ $users = $stmt->fetchAll();
                     </path>
                 </svg>
             </div>
-            <h3 class="text-xl font-bold mb-2 text-slate-900">Delete Admin?</h3>
+            <h3 class="text-xl font-bold mb-2 text-slate-900">Delete Supervisor?</h3>
             <p class="text-slate-500 mb-8">This action cannot be undone. Are you sure you want to remove this
-                administrator?</p>
+                supervisor?</p>
             <div class="flex gap-3">
                 <button onclick="closeDeleteModal()"
-                    class="flex-1 px-4 py-2.5 bg-sky-100 hover:bg-sky-200 text-slate-700 rounded-xl font-semibold transition-colors">
+                    class="flex-1 px-4 py-2.5 bg-teal-100 hover:bg-teal-200 text-slate-700 rounded-xl font-semibold transition-colors">
                     Cancel
                 </button>
                 <button id="confirmDeleteBtn" onclick="executeDelete()"
                     class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-xl font-semibold transition-all shadow-lg shadow-red-200 text-white">
                     Delete
-                    </a>
+                </button>
             </div>
         </div>
     </div>
@@ -308,7 +260,7 @@ $users = $stmt->fetchAll();
         }
 
         // Delete Modal Functions
-        function showAdminDeleteModal(formId) {
+        function showDeleteModal(formId) {
             currentFormId = formId;
             const modal = document.getElementById('deleteModal');
             const container = document.getElementById('modalContainer');

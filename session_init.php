@@ -14,3 +14,31 @@ ini_set('session.cookie_lifetime', $session_lifetime);
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+
+// Absolute Session Expiry (8 hours)
+if (isset($_SESSION['user_id'])) {
+    if (!isset($_SESSION['created_at'])) {
+        $_SESSION['created_at'] = time(); // Fallback for existing sessions
+    }
+
+    $now = time();
+    $elapsed = $now - $_SESSION['created_at'];
+
+    if ($elapsed > $session_lifetime) {
+        // Session expired
+        session_unset();
+        session_destroy();
+
+        // Clear cookie
+        if (isset($_COOKIE[session_name()])) {
+            setcookie(session_name(), '', time() - 3600, '/');
+        }
+
+        // Redirect if not already on login page
+        $current_page = basename($_SERVER['PHP_SELF']);
+        if ($current_page !== 'index.php' && $current_page !== 'login.php') {
+            header("Location: index.php?error=Session expired. Please login again.");
+            exit();
+        }
+    }
+}

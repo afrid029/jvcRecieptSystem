@@ -30,8 +30,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-        $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'admin')");
-        $stmt->execute([$username, $password_hash]);
+        $role = 'admin';
+        $country_id = null;
+
+        if (isset($_POST['is_super_admin']) && $_POST['is_super_admin'] == '1') {
+            $role = 'super_admin';
+            $country_id = null;
+        } else {
+            $role = 'admin';
+            $country_id = !empty($_POST['country_id']) ? $_POST['country_id'] : null;
+        }
+
+        $stmt = $pdo->prepare("INSERT INTO users (username, password_hash, role, country_id) VALUES (?, ?, ?, ?)");
+        $stmt->execute([$username, $password_hash, $role, $country_id]);
 
         header("Location: admin_management.php?msg=Admin created successfully");
         exit();

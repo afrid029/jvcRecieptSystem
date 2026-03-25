@@ -21,15 +21,38 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Login Success
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
-            $_SESSION['role'] = $user['role']; // Store role in session
+            $_SESSION['role'] = $user['role'];
+            $_SESSION['country_id'] = $user['country_id']; // Store country_id
+            $_SESSION['created_at'] = time(); // Track login time for expiry
+
+            // Check if request is AJAX/XHR
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => true, 'redirect' => 'dashboard.php']);
+                exit();
+            }
+
             header("Location: dashboard.php");
             exit();
         } else {
             // Login Failed
+            if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                header('Content-Type: application/json');
+                http_response_code(401);
+                echo json_encode(['success' => false, 'message' => 'Invalid username or password']);
+                exit();
+            }
+
             header("Location: index.php?error=Invalid username or password");
             exit();
         }
     } catch (PDOException $e) {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+            header('Content-Type: application/json');
+            http_response_code(500);
+            echo json_encode(['success' => false, 'message' => 'System error']);
+            exit();
+        }
         header("Location: index.php?error=System error, please try again later");
         exit();
     }

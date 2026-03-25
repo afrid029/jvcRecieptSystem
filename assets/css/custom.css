@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Arima:wght@100..700&display=swap');
+
+:root {
+    --color-bg-light: #f8fafb;
+    --color-bg-white: #ffffff;
+    --color-theme-red: #c40001;
+    --color-theme-red-hover: #a00001;
+    --color-primary1: #e23b3b;
+    --color-primary: #c51d1d;
+}
+
+body {
+    font-family: 'Arima', system-ui, sans-serif;
+    background-color: var(--color-bg-light);
+}
+
+.font-arima {
+    font-family: 'Arima', system-ui, sans-serif;
+}
+
+.text-theme-red {
+    color: var(--color-theme-red);
+}
+
+.bg-theme-red {
+    background-color: var(--color-theme-red);
+}
+
+.bg-theme-red:hover {
+    background-color: var(--color-theme-red-hover);
+}
+
+.border-theme-red {
+    border-color: var(--color-theme-red);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #999;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+#oba-container {
+    scroll-behavior: auto;
+    will-change: scroll-position;
+}
+
+/* .oba-track {
+    display: flex;
+    width: max-content;
+    animation: obaPingPong 20s linear infinite alternate;
+} */
+
+@keyframes obaPingPong {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-50%);
+    }
+}

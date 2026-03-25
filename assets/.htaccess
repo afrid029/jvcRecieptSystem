@@ -1,0 +1,15 @@
+# Disable Directory Listing
+
+Options -Indexes
+
+# Prevent direct access to assets (CSS, JS, Images)
+
+# Only allow if the request comes from our own domain (or has a Referer)
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # Block requests with an empty Referer for specific file types
+    RewriteCond %{HTTP_REFERER} ^$
+    RewriteRule \.(jpg|jpeg|png|gif|css|js|webp)$ - [F,L]
+</IfModule>
